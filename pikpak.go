@@ -6,6 +6,7 @@ import (
 	"github.com/lyqingye/pikpak-go"
 	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -109,7 +110,15 @@ func (od *OfflineDownloader) AddMagnetTask(fileName, magnetLink string) error {
 	}
 
 	log.Printf("📥 开始添加离线下载任务: %s", fileName)
-	log.Printf("🧲 磁力链接: %s", magnetLink)
+
+	// 判断是磁力链接还是种子文件链接
+	if strings.HasPrefix(magnetLink, "magnet:") {
+		log.Printf("🧲 磁力链接: %s", magnetLink)
+	} else if strings.HasSuffix(magnetLink, ".torrent") {
+		log.Printf("📄 种子文件链接: %s", magnetLink)
+	} else {
+		log.Printf("🔗 下载链接: %s", magnetLink)
+	}
 
 	// 获取目标文件夹ID
 	targetFolderID := od.getTargetFolderID()
@@ -120,7 +129,7 @@ func (od *OfflineDownloader) AddMagnetTask(fileName, magnetLink string) error {
 	}
 
 	// 使用SDK的OfflineDownload方法
-	// 参数：name, fileUrl, parentId
+	// PikPak支持磁力链接和种子文件链接
 	newTask, err := od.client.OfflineDownload(fileName, magnetLink, targetFolderID)
 	if err != nil {
 		return fmt.Errorf("添加离线下载任务失败: %v", err)

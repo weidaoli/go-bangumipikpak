@@ -30,12 +30,21 @@ type Item struct {
 	PubDate     string    `xml:"pubDate"`
 	GUID        string    `xml:"guid"`
 	Enclosure   Enclosure `xml:"enclosure"`
+	Torrent     Torrent   `xml:"torrent"`
 }
 
 type Enclosure struct {
 	URL    string `xml:"url,attr"`
 	Length string `xml:"length,attr"`
 	Type   string `xml:"type,attr"`
+}
+
+type Torrent struct {
+	XMLName       xml.Name `xml:"torrent"`
+	Xmlns         string   `xml:"xmlns,attr"`
+	Link          string   `xml:"link"`
+	ContentLength string   `xml:"contentLength"`
+	PubDate       string   `xml:"pubDate"`
 }
 
 // 番剧监听器
@@ -93,24 +102,41 @@ func (bm *BangumiMonitor) fetchRSS(rssURL string) (*RSS, error) {
 
 // 从描述或链接中提取磁力链接
 func (bm *BangumiMonitor) extractMagnetLink(item Item) string {
-	// 优先从描述中提取磁力链接
+	// 优先从torrent元素中提取
+	if item.Torrent.Link != "" {
+		log.Printf("🔗 从torrent元素获取链接: %s", item.Torrent.Link)
+		return item.Torrent.Link
+	}
+
+	// 磁力链接正则表达式
 	magnetRegex := regexp.MustCompile(`magnet:\?[^"'\s<>]+`)
 
-	// 先检查描述
+	// 检查描述中的磁力链接
 	if matches := magnetRegex.FindStringSubmatch(item.Description); len(matches) > 0 {
+		log.Printf("🔗 从描述中提取磁力链接: %s", matches[0])
 		return matches[0]
 	}
 
-	// 再检查链接
+	// 检查链接中的磁力链接
 	if matches := magnetRegex.FindStringSubmatch(item.Link); len(matches) > 0 {
+		log.Printf("🔗 从链接中提取磁力链接: %s", matches[0])
 		return matches[0]
 	}
 
 	// 检查enclosure
 	if item.Enclosure.URL != "" && strings.HasPrefix(item.Enclosure.URL, "magnet:") {
+		log.Printf("🔗 从enclosure获取磁力链接: %s", item.Enclosure.URL)
 		return item.Enclosure.URL
 	}
 
+	// 如果torrent.link不是磁力链接，可能是种子文件链接，需要转换
+	if item.Torrent.Link != "" && strings.HasSuffix(item.Torrent.Link, ".torrent") {
+		log.Printf("🔗 发现种子文件链接: %s", item.Torrent.Link)
+		// 这里可以选择下载种子文件并转换为磁力链接，或者直接使用种子文件链接
+		return item.Torrent.Link
+	}
+
+	log.Printf("⚠️  未找到磁力链接或种子文件: %s", item.Title)
 	return ""
 }
 
@@ -120,6 +146,14 @@ func (bm *BangumiMonitor) cleanFileName(title string) string {
 	htmlRegex := regexp.MustCompile(`<[^>]*>`)
 	cleaned := htmlRegex.ReplaceAllString(title, "")
 
+	// 移除方括号内容（通常是字幕组信息）
+	bracketRegex := regexp.MustCompile(`\[[^\]]*\]`)
+	cleaned = bracketRegex.ReplaceAllString(cleaned, "")
+
+	// 移除圆括号内容
+	// parenRegex := regexp.MustCompile(`\([^)]*\)`)
+	// cleaned = parenRegex.ReplaceAllString(cleaned, "")
+
 	// 移除不合法的文件名字符
 	invalidChars := regexp.MustCompile(`[<>:"/\\|?*]`)
 	cleaned = invalidChars.ReplaceAllString(cleaned, "_")
@@ -128,9 +162,17 @@ func (bm *BangumiMonitor) cleanFileName(title string) string {
 	cleaned = strings.TrimSpace(cleaned)
 	cleaned = regexp.MustCompile(`\s+`).ReplaceAllString(cleaned, " ")
 
+	// 移除开头和结尾的下划线和空格
+	cleaned = strings.Trim(cleaned, "_ ")
+
 	// 限制文件名长度
 	if len(cleaned) > 200 {
 		cleaned = cleaned[:200]
+	}
+
+	// 如果清理后为空，使用时间戳
+	if cleaned == "" {
+		cleaned = fmt.Sprintf("番剧_%s", time.Now().Format("20060102_150405"))
 	}
 
 	return cleaned
@@ -192,10 +234,12 @@ func (bm *BangumiMonitor) checkRSSSource(rssURL string) error {
 		return fmt.Errorf("获取RSS失败: %v", err)
 	}
 
-	log.Printf("📡 获取到 %d 个RSS项目", len(rss.Channel.Items))
+	log.Printf("📡 获取到 %d 个RSS项目 (频道: %s)", len(rss.Channel.Items), rss.Channel.Title)
 
 	newItemsCount := 0
-	for _, item := range rss.Channel.Items {
+	for i, item := range rss.Channel.Items {
+		log.Printf("📄 处理项目 %d/%d: %s", i+1, len(rss.Channel.Items), item.Title)
+
 		bm.mutex.Lock()
 		alreadySeen := bm.seenItems[item.GUID]
 		bm.mutex.Unlock()
@@ -215,6 +259,7 @@ func (bm *BangumiMonitor) checkRSSSource(rssURL string) error {
 			// 只处理最近的项目（避免首次运行下载所有历史内容）
 			if pubTime.After(bm.lastChecked) {
 				log.Printf("🆕 发现新项目: %s", item.Title)
+				log.Printf("   📅 发布时间: %s", pubTime.Format("2006-01-02 15:04:05"))
 
 				if bm.shouldDownload(item) {
 					magnetLink := bm.extractMagnetLink(item)
@@ -222,6 +267,7 @@ func (bm *BangumiMonitor) checkRSSSource(rssURL string) error {
 						log.Printf("🎬 准备下载: %s", item.Title)
 
 						fileName := bm.cleanFileName(item.Title)
+						log.Printf("📁 清理后文件名: %s", fileName)
 
 						// 添加到PikPak下载
 						err := bm.downloader.AddMagnetTask(fileName, magnetLink)
@@ -235,12 +281,14 @@ func (bm *BangumiMonitor) checkRSSSource(rssURL string) error {
 							bm.sendNotification(fileName, item.Title)
 						}
 					} else {
-						log.Printf("⚠️  未找到磁力链接: %s", item.Title)
+						log.Printf("⚠️  未找到磁力链接或种子文件: %s", item.Title)
 					}
 				}
 			} else {
 				log.Printf("⏰ 跳过旧项目: %s (发布时间: %s)", item.Title, pubTime.Format("2006-01-02 15:04:05"))
 			}
+		} else {
+			log.Printf("👁️  跳过已见项目: %s", item.Title)
 		}
 	}
 
