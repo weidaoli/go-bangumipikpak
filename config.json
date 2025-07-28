@@ -1,24 +1,47 @@
 {
-    "pikpak": {
-        "passwd": "your_pikpak_password",
-        "user": "your_pikpak_username",
-        "folder_id": "",
-        "folder_path": "/番剧下载"
-    },
-    "rss": {
-        "urls": [
-            "https://mikanani.me/RSS/Bangumi?bangumiId=3080&subgroupid=583",
-            "https://mikanani.me/RSS/Bangumi?bangumiId=3081&subgroupid=583"
-        ],
-        "check_interval_minutes": 5,
-        "keywords": ["1080p", "简体", "繁体"],
-        "exclude_keywords": ["720p", "480p", "预告"],
-        "resolutions": ["1080p", "2160p"]
-    },
-    "qq": {
-        "enabled": false,
-        "bot_url": "http://localhost:5700",
-        "token": "your_qq_bot_token",
-        "notify_users": ["123456789", "987654321"]
-    }
+  "pikpak": {
+    "passwd": "your_pikpak_password",
+    "user": "your_pikpak_username",
+    "folder_id": "",
+    "folder_path": "/番剧下载"
+  },
+  "rss": {
+    "urls": [
+      "https://mikanani.me/RSS/Bangumi?bangumiId=3080&subgroupid=583",
+      "https://mikanani.me/RSS/Bangumi?bangumiId=3081&subgroupid=583"
+    ],
+    "check_interval_minutes": 5,
+    "keywords": [
+      "1080p",
+      "简体",
+      "繁体"
+    ],
+    "exclude_keywords": [
+      "720p",
+      "480p",
+      "预告"
+    ],
+    "resolutions": [
+      "1080p",
+      "2160p"
+    ]
+  },
+  "qq": {
+    "enabled": false,
+    "bot_url": "http://localhost:5700",
+    "token": "your_qq_bot_token",
+    "notify_users": [
+      "123456789",
+      "987654321"
+    ]
+  },
+  "telegram": {
+    "enabled": false,
+    "bot_token": "your_telegram_bot_token",
+    "chat_id": "your_telegram_chat_id",
+    "notify_users": [
+      "@user1",
+      "@user2"
+    ]
+  }
 }

@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// RSS结构体定义
+// RSS RSS结构体定义
 type RSS struct {
 	XMLName xml.Name `xml:"rss"`
 	Channel Channel  `xml:"channel"`
@@ -49,11 +49,12 @@ type Torrent struct {
 
 // 番剧监听器
 type BangumiMonitor struct {
-	config      *Config
-	downloader  *OfflineDownloader
-	seenItems   map[string]bool
-	mutex       sync.RWMutex
-	lastChecked time.Time
+	config           *Config
+	downloader       *OfflineDownloader
+	seenItems        map[string]bool
+	mutex            sync.RWMutex
+	lastChecked      time.Time
+	telegramNotifier *TelegramNotifier
 }
 
 // 创建新的番剧监听器
@@ -342,6 +343,19 @@ func (bm *BangumiMonitor) sendNotification(fileName, originalTitle string) {
 			}
 		}
 	}
+
+	// 如果启用了Telegram通知
+	if bm.config.Telegram.Enabled && bm.telegramNotifier != nil {
+		message := fmt.Sprintf("🎬 *新番剧下载通知*\n\n📺 *标题:* %s\n📁 *文件名:* %s\n⏰ *时间:* %s",
+			originalTitle, fileName, time.Now().Format("2006-01-02 15:04:05"))
+
+		err := bm.telegramNotifier.SendMessage(message)
+		if err != nil {
+			log.Printf("❌ 发送Telegram通知失败: %v", err)
+		} else {
+			log.Printf("✅ Telegram通知发送成功: %s", fileName)
+		}
+	}
 }
 
 // 初始化已见项目（避免首次运行下载所有历史内容）
@@ -399,6 +413,7 @@ func (bm *BangumiMonitor) showConfig() {
 	}
 
 	log.Printf("   📱 QQ通知: %v", bm.config.QQ.Enabled)
+	log.Printf("   📱 Telegram通知: %v", bm.config.Telegram.Enabled)
 }
 
 // 开始监听所有RSS源
