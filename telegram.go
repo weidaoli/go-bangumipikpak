@@ -10,18 +10,6 @@ type TelegramNotifier struct {
 	chatID int64
 }
 
-func NewTelegramNotifier(token string, chatID int64) (*TelegramNotifier, error) {
-	bot, err := tgbotapi.NewBotAPI(token)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create bot: %v", err)
-	}
-
-	return &TelegramNotifier{
-		bot:    bot,
-		chatID: chatID,
-	}, nil
-}
-
 func (tn *TelegramNotifier) SendMessage(message string) error {
 	msg := tgbotapi.NewMessage(tn.chatID, message)
 	msg.ParseMode = "Markdown"

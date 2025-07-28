@@ -284,23 +284,6 @@ func login(user, passwd string) (string, string) {
 	return user, passwd
 }
 
-// OfflineDownload 使用新的下载器类的示例函数
-func OfflineDownload(fileName, magnetLink string) {
-	downloader, err := NewOfflineDownloader("config.json")
-	if err != nil {
-		log.Printf("❌ 创建下载器失败: %v", err)
-		return
-	}
-
-	err = downloader.AddMagnetTask(fileName, magnetLink)
-	if err != nil {
-		log.Printf("❌ 添加下载任务失败: %v", err)
-		return
-	}
-
-	log.Printf("✅ 下载任务添加成功")
-}
-
 // initializeTargetFolder 初始化目标文件夹
 func (od *OfflineDownloader) initializeTargetFolder() error {
 	// 如果已经指定了文件夹ID，直接使用

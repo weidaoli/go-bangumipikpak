@@ -57,16 +57,6 @@ type BangumiMonitor struct {
 	telegramNotifier *TelegramNotifier
 }
 
-// 创建新的番剧监听器
-func NewBangumiMonitor(config *Config, downloader *OfflineDownloader) *BangumiMonitor {
-	return &BangumiMonitor{
-		config:      config,
-		downloader:  downloader,
-		seenItems:   make(map[string]bool),
-		lastChecked: time.Now(),
-	}
-}
-
 // 获取RSS内容
 func (bm *BangumiMonitor) fetchRSS(rssURL string) (*RSS, error) {
 	client := &http.Client{
