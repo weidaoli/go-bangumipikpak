@@ -46,6 +46,10 @@
 ```
 
 ### 运行
+克隆项目
+```bash
+git clone https://github.com/weidaoli/go-bangumipikpak.git
+```
 
 编译运行：
 
@@ -59,8 +63,15 @@ docker build -t bangumipikpak:latest .
 docker run -d \
   --name bangumipikpak \
   --restart unless-stopped \
-  -v config.json:/app/config.json:ro \
+  -v ./config.json:/app/config.json:ro \
   bangumipikpak:latest
+```
+使用 Docker Compose
+```bash
+#准备配置文件
+vim config.json
+#运行
+docker compose up -d
 ```
 
 ##  配置详解
@@ -184,5 +195,5 @@ bangumipikpak/
 ---
 
 如果这个项目对你有帮助，请给个 ⭐ Star！
-```
+
 

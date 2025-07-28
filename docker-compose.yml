@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  bangumipikpak:
+    build: .
+    container_name: bangumipikpak
+    restart: unless-stopped
+    volumes:
+      - ./config.json:/app/config.json:ro
+    environment:
+      - TZ=Asia/Shanghai
