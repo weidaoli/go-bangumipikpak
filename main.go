@@ -138,7 +138,7 @@ func (bm *BangumiMonitor) cleanFileName(title string) string {
 	cleaned := htmlRegex.ReplaceAllString(title, "")
 
 	// 移除方括号内容（通常是字幕组信息）
-	bracketRegex := regexp.MustCompile(`\[[^\]]*\]`)
+	bracketRegex := regexp.MustCompile(`\[[^]]*]`)
 	cleaned = bracketRegex.ReplaceAllString(cleaned, "")
 
 	// 移除圆括号内容
