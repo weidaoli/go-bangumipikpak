@@ -427,3 +427,45 @@ func (bm *BangumiMonitor) StartMonitoring() {
 
 	log.Println("🎬 开始监听番剧更新...")
 }
+
+func main() {
+	log.Printf("🚀 启动番剧监听器...")
+
+	// 创建离线下载器
+	downloader, err := NewOfflineDownloader("config.json")
+	if err != nil {
+		log.Fatalf("❌ 创建下载器失败: %v", err)
+	}
+
+	// 测试连接
+	err = downloader.TestConnection()
+	if err != nil {
+		log.Fatalf("❌ 测试连接失败: %v", err)
+	}
+
+	// 创建番剧监听器
+	monitor := &BangumiMonitor{
+		config:      downloader.config,
+		downloader:  downloader,
+		seenItems:   make(map[string]bool),
+		lastChecked: time.Now().Add(-24 * time.Hour), // 从24小时前开始检查
+	}
+
+	// 如果配置了Telegram通知，初始化通知器
+	if monitor.config.Telegram.Token != "" && monitor.config.Telegram.ChatID != 0 {
+		monitor.telegramNotifier = NewTelegramNotifier(
+			monitor.config.Telegram.Token,
+			monitor.config.Telegram.ChatID,
+		)
+		log.Printf("✅ Telegram通知已启用")
+	}
+
+	// 显示配置信息
+	monitor.showConfig()
+
+	// 初始化已见项目
+	monitor.initializeSeenItems()
+
+	// 开始监听
+	monitor.StartMonitoring()
+}
